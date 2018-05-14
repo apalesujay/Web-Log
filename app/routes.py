@@ -1,28 +1,52 @@
-from flask import render_template, flash, redirect
+from flask import render_template, flash, redirect, request, url_for
+from flask_login import current_user, login_user, login_required, logout_user
+from werkzeug.urls import url_parse
 
-from app import app
-from app.forms import LoginForm
+from app import app, db
+from app.forms import LoginForm, RegistrationForm
+from app.models import User
 
 @app.route('/')
 @app.route('/index')
+@login_required
 def index():
-    user = {'username': 'Sujay'}
-    posts = [
-        {
-            'author' : {'username' : 'Aditya'},
-            'body' : 'Best Flask Tutorial'
-        },
-        {
-            'author' : {'username' : 'Jitendra'},
-            'body' : 'Learn Python in 24 Hrs'
-        }
-    ]
-    return render_template('index.html', title = 'Web Log', user = user, posts = posts)
+    return render_template('index.html', title = 'Web Log')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
     form = LoginForm()
     if form.validate_on_submit():
-        flash('Login requested for user: {}, remeber_me={}'.format(form.username.data, form.remember_me.data))
-        return redirect(url_for('index'))
+        user = User.query.filter_by(username = form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        login_user(user, remember = form.remember_me.data)
+        next_page = request.args.get('next')
+        if not next_page or url_parse(next_page).netloc != '':
+            next_page = url_for('index')
+        return redirect(next_page)
     return render_template('login.html', title = 'Sign In', form = form)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(username = form.username.data, email = form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('Congatulations, registration successful!')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html', title = 'Register', form = form)
