@@ -3,7 +3,7 @@
 
 {% block app_content %}
     <h1>
-        Sign In
+        {{ _('Sign In') }}
     </h1>
     <div class="row">
         <div class="col-md-4">
@@ -12,15 +12,15 @@
     </div>
     <br>
     <p>
-        New User?
+        {{ _('New User?') }}
         <a href="{{ url_for('register') }}">
-            Click to Register!
+            {{ _('Click to Register!') }}
         </a>
     </p>
     <p>
-        Forgot Your Password?
+        {{ _('Forgot Your Password?') }}
         <a href="{{ url_for('reset_password_request') }}">
-            Click to Reset It
+            {{ _('Click to Reset') }}
         </a>
     </p>
 {% endblock %}
